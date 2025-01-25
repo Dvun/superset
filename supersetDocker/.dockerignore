@@ -1,0 +1,5 @@
+./connection.py
+./Dockerfile
+./docker-compose.py
+./.env
+./initializeSchemaAndDatasets.sh

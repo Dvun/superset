@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: superset_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - superset_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: superset_cache
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - superset_network
+
+  superset:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: superset_app
+    restart: unless-stopped
+    environment:
+      SUPERSET_ENV: development
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      POSTGRES_DB_NAME: ${POSTGRES_DB_NAME}
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://postgres:postgres@superset_db:5432/${POSTGRES_DB_NAME}
+      REDIS_HOST: superset_cache
+      REDIS_PORT: 6379
+      RATELIMIT_STORAGE_URL: redis://superset_cache:6379
+      SUPERSET_CONFIG_PATH: /app/superset_config.py
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./superset_config.py:/app/superset_config.py
+      - superset_home:/app/superset_home
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - superset_network
+
+networks:
+  superset_network:
+
+volumes:
+  postgres_data:
+  redis_data:
+  superset_home:
